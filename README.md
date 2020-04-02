@@ -8,7 +8,9 @@ stepped rot
 substitution ciphers
 
 Implements the following tools for cracking stuff:
+
 a set of all words in english language - englishwords
+
 a dictionary of word patterns in the form of an int: dog:123, puppy:12113
 
 subcipher.py has the functions decryptsubcipher and quickdecryptsubcipher to decode substitutionciphers
