@@ -1,1 +1,1 @@
-__all__=['rot','xor','subcipher','subuncipher','steprot','decryptsubcipher','countenglish']
+__all__=['rot','xor', 'deterministicsubcipher.py', 'subuncipher', 'steprot', 'decryptsubcipher', 'countenglish']

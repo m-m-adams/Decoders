@@ -1,14 +1,14 @@
 import string
 import re
-import checkenglish
+import fitnessfuncs
 
 def trythemall(message):
     Possible=[]
     Confidence=0
     for i in range(26):
         for j in range(26):
-            PossibleMessage=checkenglish.steprot(message, i, j)
-            Num=checkenglish.countenglish(PossibleMessage)
+            PossibleMessage=fitnessfuncs.steprot(message, i, j)
+            Num=fitnessfuncs.countenglish(PossibleMessage)
             if Num>Confidence:
                 Possible=PossibleMessage
                 Confidence=Num
