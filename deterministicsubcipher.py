@@ -7,7 +7,7 @@ import pprint
 from itertools import cycle
 import decoders.fitnessfuncs as checkenglish
 import decoders.ciphers as ciphers
-
+from ciphers import SimpleSubstitution as SimpleSub
 
 def getblankcipherlettermapping():
     return {'A': [], 'B': [], 'C': [], 'D': [], 'E': [], 'F': [], 'G': [], 'H': [], 'I': [], 'J': [], 'K': [], 'L': [], 'M': [], 'N': [], 'O': [], 'P': [], 'Q': [], 'R': [], 'S': [], 'T': [], 'U': [], 'V': [], 'W': [], 'X': [], 'Y': [], 'Z': []}
@@ -107,7 +107,8 @@ def buildknownpatterns(ciphertext, lettermapping):
             ciphertext = ciphertext.replace(cipherletter.upper(), '_')
     
     key = ''.join(key)
-    knownpatterns=ciphers.subuncipher(ciphertext, key)
+    knownpatterns=SimpleSub(key).decipher(ciphertext, True)
+    #knownpatterns=ciphers.subuncipher(ciphertext, key)
     knownpatterns=knownpatterns.replace('_','[a-zA-Z]')
     # With the key we've created, decrypt the ciphertext.
     return knownpatterns,key
@@ -243,8 +244,9 @@ if __name__=='__main__':
     #ciphertext='KWJRCAKM TCCTCCHXTBAJC YWERHMCB JMPWUMXMCEM IZAGHTC JMVWMCB OHCKTXXMO GJAAKGTLLMJC HOHABEHMC WXCWIIAJBMO TOUHCMC SAJTKHXHSMJ AUMJJTXR OJWYYMBC FALSMO'
     key='LFWOAYUISVKMNXPBDCRJTQEGHZ'
 
-    ciphertext=ciphers.subcipher(mymessage, key)
+    ciphertext=SimpleSub(key).encipher(mymessage, True)
     print(ciphertext)
+    print(SimpleSub(key).decipher(ciphertext, True))
     plain=quickdecryptsubcipher(ciphertext,20)
 
-    print(ciphers.subuncipher(ciphertext, key))
+

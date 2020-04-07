@@ -8,7 +8,7 @@ from math import log10
 from itertools import cycle
 
 
-class ngram_score(object):
+class NGramScore(object):
     def __init__(self, ngramfile, sep=' '):
         ''' load a file containing ngrams and counts, calculate log probabilities '''
         self.ngrams = {}
@@ -34,7 +34,35 @@ class ngram_score(object):
                 score += self.floor
         return score
 
-class wordlist_score(object):
+
+class WordFreqScore(object):
+    def __init__(self, wordfreqfile, sep=' '):
+        ''' load a file containing ngrams and counts, calculate log probabilities '''
+        self.words = {}
+        with open(wordfreqfile) as file:
+            for line in file.read().split('\n'):
+                key, count = line.split(sep)
+                self.ngrams[key] = int(count)
+        self.L = len(key)
+        self.N = sum(self.words.values())
+        # calculate log probabilities
+        for key in self.words.keys():
+            self.words[key] = log10(float(self.words[key]) / self.N)
+        self.floor = log10(0.01 / self.N)
+
+    def score(self, text):
+        ''' compute the score of text '''
+        score = 0
+        ngrams = self.ngrams.__getitem__
+        for i in range(len(text) - self.L + 1):
+            if text[i:i + self.L] in self.ngrams:
+                score += ngrams(text[i:i + self.L])
+            else:
+                score += self.floor
+        return score
+
+
+class WordListScore(object):
     def __init__(self, wordlistfile):
         DictionaryFile = open(wordlistfile)
         englishwords = set()
