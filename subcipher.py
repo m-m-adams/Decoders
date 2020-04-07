@@ -5,7 +5,8 @@ import copy
 import re
 import pprint
 from itertools import cycle
-import decode
+import decoders.checkenglish as checkenglish
+import decoders.ciphers as ciphers
 
 
 def getblankcipherlettermapping():
@@ -80,11 +81,11 @@ def buildlettermap(message):
     candidates={}
     for cipherword in cipherwords.split():
         newmap=getblankcipherlettermapping()
-        wordpattern=decode.getwordpattern(cipherword)
+        wordpattern=checkenglish.getwordpattern(cipherword)
         #print(cipherword,wordpattern)
-        if wordpattern not in decode.englishpatterns:
+        if wordpattern not in checkenglish.englishpatterns:
             continue
-        for candidate in decode.englishpatterns[wordpattern]:
+        for candidate in checkenglish.englishpatterns[wordpattern]:
             candidates[candidate]=None
             newmap = addletterstomapping(newmap, cipherword, candidate)
         intersectedmap = intersectmappings(intersectedmap, newmap)
@@ -99,14 +100,14 @@ def buildknownpatterns(ciphertext, lettermapping):
     for cipherletter in LETTERS:
         if len(lettermapping[cipherletter]) == 1:
             # If there's only one letter, add it to the key.
-            keyindex = decode.letters.find(lettermapping[cipherletter][0])
+            keyindex = checkenglish.letters.find(lettermapping[cipherletter][0])
             key[keyindex] = cipherletter
         else:
             ciphertext = ciphertext.replace(cipherletter.lower(), '_')
             ciphertext = ciphertext.replace(cipherletter.upper(), '_')
     
     key = ''.join(key)
-    knownpatterns=decode.subuncipher(ciphertext,key)
+    knownpatterns=ciphers.subuncipher(ciphertext, key)
     knownpatterns=knownpatterns.replace('_','[a-zA-Z]')
     # With the key we've created, decrypt the ciphertext.
     return knownpatterns,key
@@ -177,10 +178,10 @@ def decryptsubcipher(ciphertext):
         
         knownpatterns2,key=buildknownpatterns(ciphertext,intersectedlettermap)
         plaintext,others=decryptwithknownpatterns(knownpatterns2,possiblewords)
-        #print('\n',intersectedlettermap)
+        print(round)
 
     
-    return(decode.subuncipher(fullciphertext,key),intersectedlettermap,key)
+    return(ciphers.subuncipher(fullciphertext, key), intersectedlettermap, key)
 
 def quickdecryptsubcipher(ciphertext,nwords):
     splittext=ciphertext.split()
@@ -188,18 +189,20 @@ def quickdecryptsubcipher(ciphertext,nwords):
     splittext.reverse()
     partialcipher=' '.join(splittext[0:nwords])
     plain,lettermap,key=decryptsubcipher(partialcipher)
-    return(decode.subuncipher(ciphertext,key))
+    return(ciphers.subuncipher(ciphertext, key))
+
+LETTERS=checkenglish.letters
 
 if __name__=='__main__':
-    LETTERS=decode.letters
+    LETTERS=checkenglish.letters
     print(LETTERS)
     
     mymessage = 'If a man is offered a fact which goes against his instincts, he will scrutinize it closely, and unless the evidence is overwhelming, he will refuse to believe it. If, on the other hand, he is offered something which affords a reason for acting in accordance to his instincts, he will accept it even on the slightest evidence. The origin of myths is explained in this way. -Bertrand Russell'
     #ciphertext='KWJRCAKM TCCTCCHXTBAJC YWERHMCB JMPWUMXMCEM IZAGHTC JMVWMCB OHCKTXXMO GJAAKGTLLMJC HOHABEHMC WXCWIIAJBMO TOUHCMC SAJTKHXHSMJ AUMJJTXR OJWYYMBC FALSMO'
     key='LFWOAYUISVKMNXPBDCRJTQEGHZ'
 
-    ciphertext=decode.subcipher(mymessage,key)
+    ciphertext=ciphers.subcipher(mymessage, key)
     print(ciphertext)
-    plain,lettermap,key=decryptsubcipher(ciphertext)
+    plain=quickdecryptsubcipher(ciphertext,20)
 
-    print(decode.subuncipher(ciphertext,key))
+    print(ciphers.subuncipher(ciphertext, key))

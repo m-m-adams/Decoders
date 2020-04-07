@@ -1,14 +1,14 @@
 import string
 import re
-import decode
+import checkenglish
 
 def trythemall(message):
     Possible=[]
     Confidence=0
     for i in range(26):
         for j in range(26):
-            PossibleMessage=decode.steprot(message,i,j)
-            Num=decode.countenglish(PossibleMessage)
+            PossibleMessage=checkenglish.steprot(message, i, j)
+            Num=checkenglish.countenglish(PossibleMessage)
             if Num>Confidence:
                 Possible=PossibleMessage
                 Confidence=Num
