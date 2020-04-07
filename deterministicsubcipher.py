@@ -4,10 +4,26 @@ import os
 import copy
 import re
 import pprint
+import decoders.dictionaries.wordpatterns as wordpatterns
 from itertools import cycle
 import decoders.fitnessfuncs as checkenglish
 import decoders.ciphers as ciphers
-from ciphers import SimpleSubstitution as SimpleSub
+
+
+
+def subcipher(message, key):
+    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    print(len(alphabet))
+    fullkey = key.lower()+key.upper()
+    print('the key is',key)
+    trans=message.maketrans(alphabet,fullkey)
+    return message.translate(trans)
+
+def subuncipher(message,key):
+    alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    fullkey=key.lower()+key.upper()
+    trans=message.maketrans(fullkey,alphabet)
+    return message.translate(trans)
 
 def getblankcipherlettermapping():
     return {'A': [], 'B': [], 'C': [], 'D': [], 'E': [], 'F': [], 'G': [], 'H': [], 'I': [], 'J': [], 'K': [], 'L': [], 'M': [], 'N': [], 'O': [], 'P': [], 'Q': [], 'R': [], 'S': [], 'T': [], 'U': [], 'V': [], 'W': [], 'X': [], 'Y': [], 'Z': []}
@@ -107,8 +123,7 @@ def buildknownpatterns(ciphertext, lettermapping):
             ciphertext = ciphertext.replace(cipherletter.upper(), '_')
     
     key = ''.join(key)
-    knownpatterns=SimpleSub(key).decipher(ciphertext, True)
-    #knownpatterns=ciphers.subuncipher(ciphertext, key)
+    knownpatterns=subuncipher(ciphertext,key)
     knownpatterns=knownpatterns.replace('_','[a-zA-Z]')
     # With the key we've created, decrypt the ciphertext.
     return knownpatterns,key
@@ -182,7 +197,7 @@ def decryptsubcipher(ciphertext):
         print(round)
 
     
-    return(ciphers.subuncipher(fullciphertext, key), intersectedlettermap, key)
+    return(subuncipher(fullciphertext, key), intersectedlettermap, key)
 
 def getwordpattern(word):
     # Returns a string of the pattern form of the given word.
@@ -222,7 +237,10 @@ def quickdecryptsubcipher(ciphertext,nwords):
     splittext.reverse()
     partialcipher=' '.join(splittext[0:nwords])
     plain,lettermap,key=decryptsubcipher(partialcipher)
-    return(ciphers.subuncipher(ciphertext, key))
+    return(subuncipher(ciphertext, key))
+
+englishpatterns=wordpatterns.allpatterns
+LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 if __name__=='__main__':
 
@@ -244,9 +262,10 @@ if __name__=='__main__':
     #ciphertext='KWJRCAKM TCCTCCHXTBAJC YWERHMCB JMPWUMXMCEM IZAGHTC JMVWMCB OHCKTXXMO GJAAKGTLLMJC HOHABEHMC WXCWIIAJBMO TOUHCMC SAJTKHXHSMJ AUMJJTXR OJWYYMBC FALSMO'
     key='LFWOAYUISVKMNXPBDCRJTQEGHZ'
 
-    ciphertext=SimpleSub(key).encipher(mymessage, True)
+    ciphertext=subcipher(mymessage, key)
     print(ciphertext)
-    print(SimpleSub(key).decipher(ciphertext, True))
-    plain=quickdecryptsubcipher(ciphertext,20)
+    print(subuncipher(ciphertext,key))
+    plain=quickdecryptsubcipher(ciphertext, 20)
+    print(plain)
 
 
