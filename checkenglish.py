@@ -72,27 +72,27 @@ def countenglish(message):
     return float(matches)/(count)
 
 
-wordspath=os.path.join(os.path.dirname(os.path.abspath(__file__)),"wordlist.py")
+wordspath=os.path.join(os.path.dirname(os.path.abspath(__file__)),'dictionaries',"wordlist.py")
 if not os.path.exists(wordspath):
     fo=open(wordspath,'w')
     fo.write('allwords= ')
-    englishwords=makeDictionary(os.path.join(os.path.dirname(os.path.abspath(__file__)),"dictionary.txt"))
+    englishwords=makeDictionary(wordspath)
     fo.write(pprint.pformat(englishwords))
     fo.close()
 
-import decoders.wordlist as wordlist
+import decoders.dictionaries.wordlist as wordlist
 
 englishwords=wordlist.allwords
 
-wordpatternpath=os.path.join(os.path.dirname(os.path.abspath(__file__)),"wordpatterns.py")
+wordpatternpath=os.path.join(os.path.dirname(os.path.abspath(__file__)),'dictionaries',"wordpatterns.py")
 if not os.path.exists(wordpatternpath):
     fo=open(wordpatternpath,'w')
     fo.write('allpatterns= ')
-    wordpatterns=makewordpatterns(os.path.join(os.path.dirname(os.path.abspath(__file__)),"dictionary.txt"))
+    wordpatterns=makewordpatterns(os.path.join(os.path.dirname(os.path.abspath(__file__)),'dictionaries',"dictionary.txt"))
     fo.write(pprint.pformat(wordpatterns))
     fo.close()
 
-import decoders.wordpatterns as wordpatterns
+import decoders.dictionaries.wordpatterns as wordpatterns
 
 englishpatterns=wordpatterns.allpatterns
 
