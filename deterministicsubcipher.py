@@ -1,21 +1,17 @@
-import string
-import re
+
 import os
 import copy
 import re
 import pprint
+import time
 import decoders.dictionaries.wordpatterns as wordpatterns
-from itertools import cycle
-import decoders.fitnessfuncs as checkenglish
-import decoders.ciphers as ciphers
+
 
 
 
 def subcipher(message, key):
     alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    print(len(alphabet))
     fullkey = key.lower()+key.upper()
-    print('the key is',key)
     trans=message.maketrans(alphabet,fullkey)
     return message.translate(trans)
 
@@ -88,24 +84,35 @@ def removesolvedlettersfrommapping(lettermapping):
                         loopAgain = True
     return lettermapping
 
-def buildlettermap(message):
+def buildlettermap(message, knownlettermap):
     #make a blank dictionary
     intersectedmap =getblankcipherlettermapping()
+    knownmap=knownlettermap
+    starttime=time.time()
     cipherwords=message.upper()
     #print(cipherwords)
     cipherwords=''.join(filter(lambda ch:ch==' ' or ch.isalpha(),cipherwords))
     candidates={}
-    for cipherword in cipherwords.split():
+    uniquewords=set(cipherwords.split())
+    print('this message has {} unique words'.format(len(uniquewords)))
+    for cipherword in uniquewords:
+        starttime=time.time()
         newmap=getblankcipherlettermapping()
         wordpattern=getwordpattern(cipherword)
         #print(cipherword,wordpattern)
         if wordpattern not in englishpatterns:
             continue
-        for candidate in englishpatterns[wordpattern]:
-            candidates[candidate]=None
-            newmap = addletterstomapping(newmap, cipherword, candidate)
-        intersectedmap = intersectmappings(intersectedmap, newmap)
-    return removesolvedlettersfrommapping(intersectedmap),candidates
+        else:
+            possibledeciphers=englishpatterns[wordpattern]
+            for candidate in possibledeciphers:
+                candidates[candidate]=None
+                newmap = addletterstomapping(newmap, cipherword, candidate)
+            intersectedmap = intersectmappings(intersectedmap, newmap)
+        print('the word {} took {} seconds and had {} possibilities'.format(cipherword,time.time()-starttime, len(englishpatterns[wordpattern])))
+
+    intersectedmap=intersectmappings(intersectedmap,knownmap)
+    finishedmap=removesolvedlettersfrommapping(intersectedmap)
+    return finishedmap,candidates
 
 def buildknownpatterns(ciphertext, lettermapping):
     # Return a string of the ciphertext decrypted with the letter mapping,
@@ -158,11 +165,17 @@ def buildknownlettermap(ciphertext,plaintext):
 
 def decryptsubcipher(ciphertext):
     fullciphertext=ciphertext
+    knownlettermap=getblankcipherlettermapping()
     ciphertext=''.join(filter(lambda ch:ch==' ' or ch.isalpha(),ciphertext))
-    initiallettermap,possiblewords=buildlettermap(ciphertext)
+
+    initiallettermap,possiblewords=buildlettermap(ciphertext, knownlettermap)
+
+
     knownpatterns,key=buildknownpatterns(ciphertext,initiallettermap)
+    print(knownpatterns)
+    starttime=time.time()
     plaintext,others=decryptwithknownpatterns(knownpatterns,possiblewords)
-    #print(plaintext)
+
     progress=True
     lastlettermap=initiallettermap
     round=1
@@ -170,7 +183,7 @@ def decryptsubcipher(ciphertext):
 
         round+=1
         lettermapfromdecryption=buildknownlettermap(ciphertext,plaintext)
-        
+
         #build possible letter map from remaining ciphertext
 
         remainingcipherwords=[]
@@ -181,23 +194,22 @@ def decryptsubcipher(ciphertext):
             if plaintextarray[i]=='???':
                 remainingcipherwords.append(ciphertextarray[i])
         remainingciphertext=' '.join(remainingcipherwords)
+        lettermapfromcipher,_=buildlettermap(remainingciphertext, lettermapfromdecryption)
 
-        lettermapfromcipher,_=buildlettermap(remainingciphertext)
 
-        
         intersectedlettermap=intersectmappings(lettermapfromdecryption,lettermapfromcipher)
         intersectedlettermap=removesolvedlettersfrommapping(intersectedlettermap)
 
         #determine whether to continue loop
         progress=intersectedlettermap!=lastlettermap
         lastlettermap=intersectedlettermap
-        
+
         knownpatterns2,key=buildknownpatterns(ciphertext,intersectedlettermap)
         plaintext,others=decryptwithknownpatterns(knownpatterns2,possiblewords)
         print(round)
 
     
-    return(subuncipher(fullciphertext, key), intersectedlettermap, key)
+    return(subuncipher(fullciphertext, key), initiallettermap, key)
 
 def getwordpattern(word):
     # Returns a string of the pattern form of the given word.
@@ -256,7 +268,6 @@ if __name__=='__main__':
     import decoders.dictionaries.wordpatterns as wordpatterns
     englishpatterns=wordpatterns.allpatterns
     LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    print(LETTERS)
     
     mymessage = 'If a man is offered a fact which goes against his instincts, he will scrutinize it closely, and unless the evidence is overwhelming, he will refuse to believe it. If, on the other hand, he is offered something which affords a reason for acting in accordance to his instincts, he will accept it even on the slightest evidence. The origin of myths is explained in this way. -Bertrand Russell'
     #ciphertext='KWJRCAKM TCCTCCHXTBAJC YWERHMCB JMPWUMXMCEM IZAGHTC JMVWMCB OHCKTXXMO GJAAKGTLLMJC HOHABEHMC WXCWIIAJBMO TOUHCMC SAJTKHXHSMJ AUMJJTXR OJWYYMBC FALSMO'
@@ -265,7 +276,7 @@ if __name__=='__main__':
     ciphertext=subcipher(mymessage, key)
     print(ciphertext)
     print(subuncipher(ciphertext,key))
-    plain=quickdecryptsubcipher(ciphertext, 20)
+    plain=decryptsubcipher(ciphertext)
     print(plain)
 
 

@@ -6,7 +6,7 @@ import decoders
 from decoders.fitnessfuncs import NGramScore, WordListScore
 
 basepath = os.path.dirname(decoders.__file__)
-fitness = NGramScore(os.path.join(basepath,'dictionaries','english_quintgrams.txt')) # load our quadgram statistics
+fitness = NGramScore('quadgram') # load our quadgram statistics
 english = WordListScore(os.path.join(basepath,'dictionaries','dictionary.txt'))
 
 def unsubcipher(ciphertext):
@@ -54,6 +54,7 @@ def unsubcipher(ciphertext):
 
 if __name__=='__main__':
     mymessage = 'If a man is offered a fact which goes against his instincts, he will scrutinize it closely, and unless the evidence is overwhelming, he will refuse to believe it. If, on the other hand, he is offered something which affords a reason for acting in accordance to his instincts, he will accept it even on the slightest evidence. The origin of myths is explained in this way. -Bertrand Russell'
+    challenge='xihag-macod-becag-sobeg-limyg-niged-bebah-nebig-hugad-buhog-hebig-tumoh-fuduh-mixox'
     ciphertext=SimpleSub('LFWOAYUISVKMNXPBDCRJTQEGHZ').encipher(mymessage, keep_punct=True)
 
-    print(unsubcipher(ciphertext))
+    print(unsubcipher(challenge))
