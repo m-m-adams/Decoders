@@ -82,7 +82,7 @@ class LetterMap:
                     cipherletter=cipherarray[wordnum][letternum].upper()
                     plainletter=plainarray[wordnum][letternum].upper()
 
-                    knownmap[cipherarray[wordnum][letternum].upper()].append(plainarray[wordnum][letternum].upper())
+                    knownmap[cipherletter].append(plainletter)
 
         self.lettermap=self.intersectmappings(knownmap)
         self.removesolvedlettersfrommapping()
@@ -153,8 +153,10 @@ class LetterMap:
             if knownpatterns[index] == '_':
                 ogletter=savedcipher[index].upper()
                 replacement=''.join(lettermapping[ogletter])
-                replacement='['+replacement+']'
-                knownpatterns[index]=replacement
+                if replacement == '':
+                    replacement = '.'
+                replacement ='['+replacement+']'
+                knownpatterns[index] = replacement
         knownpatterns = ''.join(knownpatterns)
         # With the key we've created, decrypt the ciphertext.
         self.knownpatterns = knownpatterns
@@ -196,9 +198,8 @@ class LetterMap:
         decryptedstring=[]
         otherpossibilities={}
         for pattern in knownpatterns.split():
-            pattern=''.join(filter(lambda ch:ch in['[',']','-',' '] or ch.isalpha(),pattern))
+            pattern=''.join(filter(lambda ch:ch in['[',']','-',' ', '.'] or ch.isalpha(),pattern))
             pattern=r'\b'+pattern+r'\b'
-            #print(pattern)
 
             p=re.compile(pattern,re.IGNORECASE)
             possibledecryptions=list(filter(p.match,possiblewords))
@@ -241,7 +242,6 @@ def decryptsubcipher(ciphertext):
         # build possible letter map from remaining ciphertext
 
         remainingcipherwords = []
-        remainingplainwords = []
         plaintextarray = plaintext.split()
         ciphertextarray = ciphertext.split()
         for i in range(len(plaintextarray)):
@@ -262,15 +262,14 @@ def decryptsubcipher(ciphertext):
         progress = remainingciphertext != unknown
         unknown=remainingciphertext
 
-        lastkey = copy.deepcopy(knownlettermap.key)
-
 
 
     return subuncipher(fullciphertext, knownlettermap.key)
 
 def getwordpattern(word):
-    # Returns a string of the pattern form of the given word.
-    # e.g. '0.1.2.3.4.1.2.3.5.6' for 'DUSTBUSTER'
+    # Returns an int with the word pattern for a word
+    # int used for more efficient dictionary lookup
+
     word = word.upper()
     nextNum = 1
     letterNums = {}
@@ -300,15 +299,6 @@ def makewordpatterns(pathtodictionary):
 
     return allPatterns
 
-def quickdecryptsubcipher(ciphertext,nwords):
-    splittext=ciphertext.split()
-    splittext.sort(key=lambda x: len(x.strip(' ,.!-')))
-    splittext.reverse()
-    partialcipher=' '.join(splittext[0:nwords])
-    print(partialcipher)
-    plain=decryptsubcipher(partialcipher)
-    return(plain)
-
 #englishpatterns=wordpatterns.allpatterns
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -326,7 +316,7 @@ englishpatterns=wordpatterns.allpatterns
 if __name__ == '__main__':
 
     
-    mymessage = 'If a man is offered a fact which goes against his instincts, he will scrutinize it closely, and unless the evidence is overwhelming, he will refuse to believe it. If, on the other hand, he is offered something which affords a reason for acting in accordance to his instincts, he will accept it even on the slightest evidence. The origin of myths is explained in this way. -Bertrand Russell'
+    mymessage = 'A mask protects others more than it protects you, It prevents you from breathing or speaking moistly on them, What a terrible image, But it actually is something that people can do in certain situations.'
     #ciphertext='LKGGZHGS OTGGSVBKLYTH BEJDYELLTB HTJEGEMZNTH ITMEQBKMPLGKMQP FKBFKBTPUAT QBKMP FBKFFGTB PQBTTQCTKB YEGSPQEMTP BTLKBDZMV PQKVTGZDT BTFEBTH FGTPFED ZMJBTPJTMQ'
     key='LFWOAYUISVKMNXPBDCRJTQEGHZ'
 
