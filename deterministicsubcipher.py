@@ -22,117 +22,108 @@ def subuncipher(message, key):
     return message.translate(trans)
 
 
-class LetterMap:
+class SubCipherDecrypter:
     def __init__(self, map=''):
-        self.blankmap = {'A': [], 'B': [], 'C': [], 'D': [], 'E': [], 'F': [], 'G': [], 'H': [], 'I': [], 'J': [],
+        self.letter_dictionary = {'A': [], 'B': [], 'C': [], 'D': [], 'E': [], 'F': [], 'G': [], 'H': [], 'I': [], 'J': [],
                          'K': [], 'L': [], 'M': [], 'N': [], 'O': [], 'P': [], 'Q': [], 'R': [], 'S': [], 'T': [],
                          'U': [], 'V': [], 'W': [], 'X': [], 'Y': [], 'Z': []}
         if map:
-            self.lettermap = map
+            self.possible_letters = map
         else:
-            self.lettermap = copy.deepcopy(self.blankmap)
-        self.possiblewords = set()
-        self.knownwords = set()
-        self.knownpatterns = ''
+            self.possible_letters = copy.deepcopy(self.letter_dictionary)
+        self.possible_words = set()
+        self.known_words = set()
+        self.known_patterns = ''
         self.key = '*' * 26
 
     # add letters from a possible cipherword:candidate pairing to the lettermap
-    def addletterstomapping(self, cipherword, candidate):
+    def add_possible_letters(self, cipherword, candidate):
 
-        lettermapping = self.lettermap
-        for i in range(len(cipherword)):
-            if candidate[i] not in lettermapping[cipherword[i]]:
-                lettermapping[cipherword[i]].append(candidate[i])
-        self.lettermap = lettermapping
+        possible_letters = self.possible_letters
+        for cipher_letter, plain_letter in zip(cipherword, candidate):
+            if plain_letter not in possible_letters[cipher_letter]:
+                possible_letters[cipher_letter].append(plain_letter)
+        self.possible_letters = possible_letters
 
     # remove letters which have been solved from the lettermap
-    def removesolvedlettersfrommapping(self):
-        lettermapping = copy.deepcopy(self.lettermap)
-        loopAgain = True
-        while loopAgain:
+    def remove_solved_letters(self):
+        possible_letters = copy.deepcopy(self.possible_letters)
+        repeat = True
+        while repeat:
             # First assume that we will not loop again:
-            loopAgain = False
+            repeat = False
             # solvedLetters will be a list of uppercase letters that have one
             # and only one possible mapping in letterMapping
-            solvedletters = []
-            for cipherletter in LETTERS:
-                if len(lettermapping[cipherletter]) == 1:
-                    solvedletters.append(lettermapping[cipherletter][0])
-            # pprint.pprint(solvedletters)
+            solved_letters = []
+            for cipher_letter in LETTERS:
+                if len(possible_letters[cipher_letter]) == 1:
+                    solved_letters.append(possible_letters[cipher_letter][0])
+
             # If a letter is solved, than it cannot possibly be a potential
             # decryption letter for a different ciphertext letter, so we
             # should remove it from those other lists.
-            for cipherletter in LETTERS:
-                for s in solvedletters:
-                    if len(lettermapping[cipherletter]) != 1 and s in lettermapping[cipherletter]:
-                        lettermapping[cipherletter].remove(s)
-                        if len(lettermapping[cipherletter]) == 1:
+            for cipher_letter in LETTERS:
+                for s in solved_letters:
+                    if len(possible_letters[cipher_letter]) != 1 and s in possible_letters[cipher_letter]:
+                        possible_letters[cipher_letter].remove(s)
+                        if len(possible_letters[cipher_letter]) == 1:
                             # A new letter is now solved, so loop again.
-                            loopAgain = True
-        self.lettermap = lettermapping
+                            repeat = True
+        self.possible_letters = possible_letters
 
     # from the known part of a partially deciphered message, compute a lettermap and intersect with current lettermap
-    def buildknownlettermap(self, ciphered, plaintext):
-        knownmap = copy.deepcopy(self.blankmap)
+    def add_known_letters_to_dictionary(self, ciphered, plaintext):
+        known_letters = copy.deepcopy(self.letter_dictionary)
+        cipher_array = ciphered.split()
+        plain_array = plaintext.split()
+        for cipher_word, plain_word in zip(cipher_array, plain_array):
+            if plain_word != '???':
+                self.known_words.add(plain_word)
+                for cipher_letter, plain_letter in zip(cipher_word, plain_word):
+                    known_letters[cipher_letter.upper()].append(plain_letter.upper())
 
-        cipherarray = ciphered.split()
-        plainarray = plaintext.split()
-        for wordnum in range(len(plainarray)):
-            if plainarray[wordnum] != '???':
-                self.knownwords.add(plainarray[wordnum])
-                for letternum in range(len(plainarray[wordnum])):
-                    cipherletter = cipherarray[wordnum][letternum].upper()
-                    plainletter = plainarray[wordnum][letternum].upper()
-
-                    knownmap[cipherletter].append(plainletter)
-
-        self.lettermap = self.intersectmappings(knownmap)
-        self.removesolvedlettersfrommapping()
+        self.possible_letters = self.combine_letter_possibilities(known_letters)
+        self.remove_solved_letters()
 
     # from an encrypted message, build out a lettermap from all possible words
-    def buildlettermap(self, message):
+    def build_possible_letter_dictionary(self, message):
         # make a blank dictionary
 
-        intersectedmap = copy.deepcopy(self.blankmap)
+        letter_possibilities = copy.deepcopy(self.letter_dictionary)
 
         cipherwords = message.upper()
         cipherwords = ''.join(filter(lambda ch: ch == ' ' or ch.isalpha(), cipherwords))
         candidates = set()
 
-        uniquewords = list(set(cipherwords.split()))
-        uniquewords.sort(key=len)
+        unique_words = list(set(cipherwords.split()))
+        unique_words.sort(key=len)
 
-        flag = 0
-        for cipherword in uniquewords:
-            wordpattern = getwordpattern(cipherword)
-            newmap = LetterMap()
+        for cipherword in unique_words:
+            word_pattern = getwordpattern(cipherword)
+            single_word_decrypter = SubCipherDecrypter()
 
-            if wordpattern not in englishpatterns:
+            if word_pattern not in englishpatterns:
 
                 continue
             else:
-                possibledeciphers = englishpatterns[wordpattern]
+                possibledeciphers = englishpatterns[word_pattern]
                 for candidate in possibledeciphers:
                     candidates.add(candidate)
-                    newmap.addletterstomapping(cipherword, candidate)
-                # print(cipherword,wordpattern, len(englishpatterns[wordpattern]), newmap.lettermap)
-                lastmap = intersectedmap
-                intersectedmap = newmap.intersectmappings(intersectedmap)
-                # print(intersectedmap)
+                    single_word_decrypter.add_possible_letters(cipherword, candidate)
+                letter_possibilities = single_word_decrypter.combine_letter_possibilities(letter_possibilities)
 
-        intersectedmap = self.intersectmappings(intersectedmap)
-        self.lettermap = intersectedmap
-        self.possiblewords = candidates
-
-        self.removesolvedlettersfrommapping()
+        letter_possibilities = self.combine_letter_possibilities(letter_possibilities)
+        self.possible_letters = letter_possibilities
+        self.possible_words = candidates
+        self.remove_solved_letters()
 
     # from the lettermap and the ciphertext, build out all known patterns
-    def buildknownpatterns(self, ciphertext):
+    def make_regex_pattern(self, ciphertext):
         # Return a string of the ciphertext decrypted with the letter mapping,
-        # with any ambiguous decrypted letters replaced with an _ underscore.
-        # First create a simple sub key from the letterMapping mapping.
+        # with any ambiguous decrypted letters replaced a regex to match their
+        # possible letters
         savedcipher = ciphertext
-        lettermapping = self.lettermap
+        lettermapping = self.possible_letters
 
         key = ['*'] * len(LETTERS)
 
@@ -157,17 +148,17 @@ class LetterMap:
                 knownpatterns[index] = replacement
         knownpatterns = ''.join(knownpatterns)
         # With the key we've created, decrypt the ciphertext.
-        self.knownpatterns = knownpatterns
+        self.known_patterns = knownpatterns
         self.key = key
 
     # intersect a mapping with a second map, return the overlap\
-    def intersectmappings(self, mapB):
+    def combine_letter_possibilities(self, mapB):
 
         # To intersect two maps, create a blank map, and then add only the
         # potential decryption letters if they exist in BOTH maps.
 
-        intersectedmapping = copy.deepcopy(self.blankmap)
-        mapA = copy.deepcopy(self.lettermap)
+        intersectedmapping = copy.deepcopy(self.letter_dictionary)
+        mapA = copy.deepcopy(self.possible_letters)
         for letter in LETTERS:
             # An empty list means "any letter is possible". In this case just
             # copy the other map entirely.
@@ -189,9 +180,9 @@ class LetterMap:
                         intersectedmapping[letter].append(mappedletter)
         return intersectedmapping
 
-    def decryptwithknownpatterns(self):
-        knownpatterns = self.knownpatterns
-        possiblewords = self.possiblewords | self.knownwords
+    def decrypt_with_regex(self):
+        knownpatterns = self.known_patterns
+        possiblewords = self.possible_words | self.known_words
         decryptedstring = []
         otherpossibilities = {}
         for pattern in knownpatterns.split():
@@ -212,18 +203,18 @@ class LetterMap:
 
 def decryptsubcipher(ciphertext):
     fullciphertext = ciphertext
-    knownlettermap = LetterMap()
+    knownlettermap = SubCipherDecrypter()
 
     ciphertext = ''.join(filter(lambda ch: ch == ' ' or ch.isalpha(), ciphertext))
 
-    knownlettermap.buildlettermap(ciphertext)
+    knownlettermap.build_possible_letter_dictionary(ciphertext)
 
-    knownlettermap.buildknownpatterns(ciphertext)
+    knownlettermap.make_regex_pattern(ciphertext)
 
-    plaintext, others = knownlettermap.decryptwithknownpatterns()
+    plaintext, others = knownlettermap.decrypt_with_regex()
 
     # print(knownlettermap.lettermap)
-    knownlettermap.buildknownlettermap(ciphertext, plaintext)
+    knownlettermap.add_known_letters_to_dictionary(ciphertext, plaintext)
 
     progress = True
     unknown = ''
@@ -242,13 +233,13 @@ def decryptsubcipher(ciphertext):
             if plaintextarray[i] == '???':
                 remainingcipherwords.append(ciphertextarray[i])
         remainingciphertext = ' '.join(remainingcipherwords)
-        knownlettermap.buildlettermap(remainingciphertext)
+        knownlettermap.build_possible_letter_dictionary(remainingciphertext)
 
-        knownlettermap.buildknownpatterns(ciphertext)
+        knownlettermap.make_regex_pattern(ciphertext)
 
-        plaintext, others = knownlettermap.decryptwithknownpatterns()
+        plaintext, others = knownlettermap.decrypt_with_regex()
 
-        knownlettermap.buildknownlettermap(ciphertext, plaintext)
+        knownlettermap.add_known_letters_to_dictionary(ciphertext, plaintext)
 
 
 
