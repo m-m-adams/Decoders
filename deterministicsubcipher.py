@@ -24,11 +24,8 @@ def subuncipher(message, key):
 
 class SubCipherDecrypter:
     def __init__(self, full_ciphertext):
-        self.letter_dictionary = {'A': [], 'B': [], 'C': [], 'D': [], 'E': [], 'F': [], 'G': [], 'H': [], 'I': [], 'J': [],
-                         'K': [], 'L': [], 'M': [], 'N': [], 'O': [], 'P': [], 'Q': [], 'R': [], 'S': [], 'T': [],
-                         'U': [], 'V': [], 'W': [], 'X': [], 'Y': [], 'Z': []}
-        self.possible_letters = copy.deepcopy(self.letter_dictionary)
-        self.word_letters=copy.deepcopy(self.letter_dictionary)
+        self.possible_letters = {}
+        self.word_letters = {}
         self.possible_words = set()
         self.known_words = set()
         self.semi_known_words = set()
@@ -42,14 +39,16 @@ class SubCipherDecrypter:
 
         possible_letters = self.word_letters
         for cipher_letter, plain_letter in zip(cipherword, candidate):
+            if cipher_letter not in possible_letters.keys():
+                possible_letters[cipher_letter] = []
             if plain_letter not in possible_letters[cipher_letter]:
                 possible_letters[cipher_letter].append(plain_letter)
         self.word_letters = possible_letters
 
     # remove letters which have been solved from the lettermap
     def remove_solved_letters(self):
-        possible_letters = copy.deepcopy(self.possible_letters)
-        #print(possible_letters)
+        possible_letters = self.possible_letters
+
         repeat = True
         while repeat:
             # First assume that we will not loop again:
@@ -57,43 +56,43 @@ class SubCipherDecrypter:
             # solvedLetters will be a list of uppercase letters that have one
             # and only one possible mapping in letterMapping
             solved_letters = []
-            for cipher_letter in LETTERS:
-                if len(possible_letters[cipher_letter]) == (2-1):
+            for cipher_letter in possible_letters.keys():
+                if len(possible_letters[cipher_letter]) == 1:
                     solved_letters.append(possible_letters[cipher_letter][0])
 
             # If a letter is solved, than it cannot possibly be a potential
             # decryption letter for a different ciphertext letter, so we
             # should remove it from those other lists.
-            for cipher_letter in LETTERS:
+            for cipher_letter in possible_letters.keys():
                 for s in solved_letters:
                     if len(possible_letters[cipher_letter]) != 1 and s in possible_letters[cipher_letter]:
                         possible_letters[cipher_letter].remove(s)
                         if len(possible_letters[cipher_letter]) == 1:
                             # A new letter is now solved, so loop again.
                             repeat = True
-        self.possible_letters = possible_letters
 
-    # from the known part of a partially deciphered message, compute a lettermap and intersect with current lettermap
+
+    # improve the dictionary with the known part of the partially deciphered message
     def add_known_letters_to_dictionary(self):
         ciphered = self.ciphertext
         plaintext = self.plaintext
-        known_letters = copy.deepcopy(self.letter_dictionary)
+        known_letters = {}
         cipher_array = ciphered.split()
         plain_array = plaintext.split()
         for cipher_word, plain_word in zip(cipher_array, plain_array):
             if plain_word != '???':
                 self.known_words.add(plain_word)
                 for cipher_letter, plain_letter in zip(cipher_word, plain_word):
+                    if cipher_letter.upper() not in known_letters.keys():
+                        known_letters[cipher_letter.upper()] = []
                     known_letters[cipher_letter.upper()].append(plain_letter.upper())
 
         self.combine_letter_possibilities(known_letters)
         self.remove_solved_letters()
 
-    # from an encrypted message, build out a lettermap from all possible words
+    # from an encrypted message, build out all possible letter translations
     def build_possible_letter_dictionary(self):
         # make a blank dictionary
-
-        letter_possibilities = copy.deepcopy(self.letter_dictionary)
         message = self.ciphertext
 
         cipherwords = message.upper()
@@ -114,11 +113,8 @@ class SubCipherDecrypter:
                     candidates.add(candidate)
                     self.add_word_letters(cipherword, candidate)
                 self.combine_letter_possibilities(self.word_letters)
-                self.word_letters = copy.deepcopy(self.letter_dictionary)
+                self.word_letters = {}
 
-        #letter_possibilities = self.combine_letter_possibilities(letter_possibilities)
-        #self.possible_letters = letter_possibilities
-        #print(self.possible_letters)
         self.possible_words = candidates
         self.remove_solved_letters()
 
@@ -132,7 +128,7 @@ class SubCipherDecrypter:
 
         key = ['*'] * len(LETTERS)
 
-        for cipherletter in LETTERS:
+        for cipherletter in possible_letters.keys():
             if len(possible_letters[cipherletter]) == 1:
                 # If there's only one letter, add it to the key.
                 keyindex = LETTERS.find(possible_letters[cipherletter][0])
@@ -157,34 +153,36 @@ class SubCipherDecrypter:
         self.key = key
 
     # intersect a mapping with a second map, return the overlap\
-    def combine_letter_possibilities(self, mapB):
+    def combine_letter_possibilities(self, new_possibilities):
 
         # To intersect two maps, create a blank map, and then add only the
         # potential decryption letters if they exist in BOTH maps.
 
-        intersectedmapping = copy.deepcopy(self.letter_dictionary)
-        mapA = copy.deepcopy(self.possible_letters)
+        combined_possibilities = {}
+        current_possibilities = self.possible_letters
         for letter in LETTERS:
             # An empty list means "any letter is possible". In this case just
             # copy the other map entirely.
-            if mapA[letter] == []:
-                intersectedmapping[letter] = copy.deepcopy(mapB[letter])
-            elif mapB[letter] == []:
-                intersectedmapping[letter] = copy.deepcopy(mapA[letter])
+            if letter in current_possibilities.keys() or letter in new_possibilities.keys():
+                combined_possibilities[letter] = []
 
-            # if one mapping has only one possibility, that's it
-            elif len(mapA[letter]) == 1:
-                intersectedmapping[letter] = copy.deepcopy(mapA[letter])
-            elif len(mapB[letter]) == 1:
-                intersectedmapping[letter] = copy.deepcopy(mapB[letter])
-            else:
-                # If a letter in mapA[letter] exists in mapB[letter], add
-                # that letter to intersectedmapping[letter].
-                for mappedletter in mapA[letter]:
-                    if mappedletter in mapB[letter]:
-                        intersectedmapping[letter].append(mappedletter)
+                if letter not in current_possibilities.keys() and letter in new_possibilities.keys():
+                    combined_possibilities[letter] = new_possibilities[letter]
+                elif letter not in new_possibilities.keys() and letter in current_possibilities.keys():
+                    combined_possibilities[letter] = current_possibilities[letter]
+                # if one mapping has only one possibility, that's it
+                elif len(current_possibilities[letter]) == 1:
+                    combined_possibilities[letter] = current_possibilities[letter]
+                elif len(new_possibilities[letter]) == 1:
+                    combined_possibilities[letter] = new_possibilities[letter]
+                else:
+                    # If a letter in current_possibilities[letter] exists in mapB[letter], add
+                    # that letter to combined_possibilities[letter].
+                    for possible_letter in current_possibilities[letter]:
+                        if possible_letter in new_possibilities[letter]:
+                            combined_possibilities[letter].append(possible_letter)
 
-        self.possible_letters = intersectedmapping
+        self.possible_letters = combined_possibilities
 
     def decrypt_with_regex(self):
         known_patterns = self.known_patterns
